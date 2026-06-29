@@ -33,10 +33,14 @@ def _first(df, cands):
 def load_raw(paths):
     frames = []
     for p in paths:
-        try:
-            df = pd.read_csv(p, encoding="latin-1")
-        except Exception:
+        p = str(p)
+        if p.lower().endswith((".xlsx", ".xls")):
             df = pd.read_excel(p)
+        else:
+            try:
+                df = pd.read_csv(p, encoding="latin-1")
+            except Exception:
+                df = pd.read_csv(p)
         df["_source_file"] = Path(p).name
         frames.append(df)
     df = pd.concat(frames, ignore_index=True)

@@ -3,7 +3,10 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
-# keep sample data + results tracked; ignore large real downloads
-data/*.csv
+# real downloaded data is refetched weekly by Actions — don't commit it
+data/football_*.csv
+data/tennis_*.csv
+data/tennis_*.xlsx
+# keep the synthetic samples as fallback
 !data/sample_football.csv
 !data/sample_tennis.csv

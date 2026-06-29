@@ -180,7 +180,7 @@ function renderSport(r){
     <div class="chart">${equityChart(r.equity_curve)}</div>` : '';
 
   return `<div class="sport">
-    <h2>${r.sport} <span class="matchcount">${r.matches_loaded} matches loaded</span></h2>
+    <h2>${r.sport} <span class="matchcount">${r.matches_loaded} matches loaded${r.data_source?' · '+r.data_source+' data':''}</span></h2>
     <div class="verdict ${vc}">${r.verdict}</div>
     ${metrics}
     ${equity}
