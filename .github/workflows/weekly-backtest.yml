@@ -1,0 +1,51 @@
+name: Weekly CLV Backtest
+
+# Runs every Monday 06:00 UTC, and on manual trigger.
+# Regenerates synthetic data (or, if you wire in a real data source via the
+# DATA step below, real data), reruns both backtests, and commits the updated
+# results.json so the dashboard refreshes itself — hands-off.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ---- DATA STEP ----------------------------------------------------
+      # Default: regenerate synthetic sample data so the pipeline always runs.
+      # TO USE REAL DATA: replace this step with a script that downloads
+      # Football-Data.co.uk / tennis-data.co.uk CSVs into data/, e.g.
+      #   curl -L -o data/E0.csv https://www.football-data.co.uk/mmz4281/2526/E0.csv
+      # Add any paid API keys as repo Secrets and reference them here.
+      - name: Prepare data
+        run: python src/make_synthetic.py
+
+      - name: Run backtests
+        run: python src/run.py
+
+      - name: Commit updated results
+        run: |
+          git config user.name "clv-bot"
+          git config user.email "actions@github.com"
+          git add results/results.json
+          if git diff --staged --quiet; then
+            echo "No changes to results."
+          else
+            git commit -m "Auto: weekly CLV backtest $(date -u +%Y-%m-%d)"
+            git push
+          fi
