@@ -29,11 +29,14 @@ jobs:
       # ---- DATA STEP ----------------------------------------------------
       # Pull real historical data from football-data.co.uk and
       # tennis-data.co.uk (GitHub runners have open network access).
-      # If a download fails, fall back to synthetic so the run never breaks.
+      # Synthetic samples are generated only as a fallback.
       - name: Fetch real data
         run: |
-          python src/fetch_data.py || true
-          # ensure samples exist as a fallback if downloads were blocked
+          echo "=== Fetching real data ==="
+          python src/fetch_data.py
+          echo "=== Files in data/ after fetch ==="
+          ls -la data/
+          echo "=== Ensuring synthetic fallback exists ==="
           python src/make_synthetic.py
 
       - name: Run backtests
@@ -43,10 +46,14 @@ jobs:
         run: |
           git config user.name "clv-bot"
           git config user.email "actions@github.com"
+          git config pull.rebase true
           git add results/results.json
           if git diff --staged --quiet; then
             echo "No changes to results."
           else
             git commit -m "Auto: weekly CLV backtest $(date -u +%Y-%m-%d)"
+            # pull any newer commits (rebasing our result commit on top) before pushing,
+            # so a moved remote doesn't reject our push
+            git pull --rebase origin main || true
             git push
           fi
