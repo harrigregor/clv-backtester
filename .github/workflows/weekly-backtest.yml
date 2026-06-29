@@ -27,13 +27,14 @@ jobs:
         run: pip install -r requirements.txt
 
       # ---- DATA STEP ----------------------------------------------------
-      # Default: regenerate synthetic sample data so the pipeline always runs.
-      # TO USE REAL DATA: replace this step with a script that downloads
-      # Football-Data.co.uk / tennis-data.co.uk CSVs into data/, e.g.
-      #   curl -L -o data/E0.csv https://www.football-data.co.uk/mmz4281/2526/E0.csv
-      # Add any paid API keys as repo Secrets and reference them here.
-      - name: Prepare data
-        run: python src/make_synthetic.py
+      # Pull real historical data from football-data.co.uk and
+      # tennis-data.co.uk (GitHub runners have open network access).
+      # If a download fails, fall back to synthetic so the run never breaks.
+      - name: Fetch real data
+        run: |
+          python src/fetch_data.py || true
+          # ensure samples exist as a fallback if downloads were blocked
+          python src/make_synthetic.py
 
       - name: Run backtests
         run: python src/run.py

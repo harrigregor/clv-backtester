@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-06-29T01:21:00+00:00",
+  "generated_utc": "2026-06-29T02:17:50+00:00",
   "results": [
     {
       "n_bets": 647,
@@ -913,7 +913,8 @@
         -28.47,
         -29.47,
         -26.23
-      ]
+      ],
+      "data_source": "synthetic sample"
     },
     {
       "n_bets": 377,
@@ -1501,7 +1502,8 @@
         -6.52,
         -7.52,
         -7.02
-      ]
+      ],
+      "data_source": "synthetic sample"
     }
   ]
 }

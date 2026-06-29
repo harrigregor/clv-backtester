@@ -61,22 +61,40 @@ def main():
     out = {"generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
            "results": []}
 
-    fb = args.football or ([str(DATA / "sample_football.csv")]
-                           if (DATA / "sample_football.csv").exists() else None)
-    tn = args.tennis or ([str(DATA / "sample_tennis.csv")]
-                         if (DATA / "sample_tennis.csv").exists() else None)
+    # Auto-discover real downloaded files; fall back to synthetic samples.
+    if args.football:
+        fb = args.football
+    else:
+        real_fb = sorted(str(p) for p in DATA.glob("football_*.csv"))
+        fb = real_fb if real_fb else (
+            [str(DATA / "sample_football.csv")]
+            if (DATA / "sample_football.csv").exists() else None)
+
+    if args.tennis:
+        tn = args.tennis
+    else:
+        real_tn = sorted(str(p) for p in DATA.glob("tennis_*"))
+        tn = real_tn if real_tn else (
+            [str(DATA / "sample_tennis.csv")]
+            if (DATA / "sample_tennis.csv").exists() else None)
 
     if fb:
         try:
-            print(f"Running football on {fb} ...")
-            out["results"].append(run_football(fb))
+            print(f"Running football on {len(fb)} file(s) ...")
+            r = run_football(fb)
+            r["data_source"] = ("real" if any("football_" in f for f in fb)
+                                else "synthetic sample")
+            out["results"].append(r)
         except Exception as e:
             out["results"].append({"sport": "football", "error": str(e)})
             print(f"  football error: {e}")
     if tn:
         try:
-            print(f"Running tennis on {tn} ...")
-            out["results"].append(run_tennis(tn))
+            print(f"Running tennis on {len(tn)} file(s) ...")
+            r = run_tennis(tn)
+            r["data_source"] = ("real" if any("tennis_2" in f for f in tn)
+                                else "synthetic sample")
+            out["results"].append(r)
         except Exception as e:
             out["results"].append({"sport": "tennis", "error": str(e)})
             print(f"  tennis error: {e}")
