@@ -29,27 +29,35 @@ FOOTBALL_SEASONS = ["2324", "2425", "2526"]          # last 3 seasons
 FOOTBALL_LEAGUES = ["E0", "E1", "D1", "I1", "SP1"]   # EPL, Championship, Bundesliga, Serie A, La Liga
 FB_BASE = "https://www.football-data.co.uk/mmz4281"
 
-# Tennis ATP yearly files.
-TENNIS_YEARS = ["2024", "2025", "2026"]
+# Tennis ATP yearly files. Use completed seasons that reliably exist as
+# archives; the in-progress year is often not posted as a yearly file yet.
+TENNIS_YEARS = ["2023", "2024", "2025"]
 TN_BASE = "http://www.tennis-data.co.uk"
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (clv-backtester data fetch)"}
 
 
-def _get(url, dest):
-    try:
-        req = urllib.request.Request(url, headers=HEADERS)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = r.read()
-        if len(data) < 200:  # too small to be a real file
-            print(f"  skip (empty/missing): {url}")
-            return False
-        dest.write_bytes(data)
-        print(f"  ok: {dest.name}  ({len(data)//1024} KB)")
-        return True
-    except Exception as e:
-        print(f"  skip ({e.__class__.__name__}): {url}")
-        return False
+def _get(url, dest, timeout=90, retries=3):
+    """Download with a generous timeout and retries (tennis-data.co.uk is slow)."""
+    import time
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = r.read()
+            if len(data) < 200:
+                print(f"  skip (empty/missing): {url}")
+                return False
+            dest.write_bytes(data)
+            print(f"  ok: {dest.name}  ({len(data)//1024} KB)")
+            return True
+        except Exception as e:
+            if attempt < retries:
+                print(f"  retry {attempt}/{retries} ({e.__class__.__name__}): {url}")
+                time.sleep(4)
+            else:
+                print(f"  skip ({e.__class__.__name__}): {url}")
+    return False
 
 
 def fetch_football():

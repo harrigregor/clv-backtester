@@ -100,7 +100,11 @@ def main():
             print(f"  tennis error: {e}")
 
     (RESULTS / "results.json").write_text(json.dumps(out, indent=2))
-    print(f"\nWrote {RESULTS / 'results.json'}")
+    # Also write into docs/results/ so GitHub Pages (serving from /docs) can read it.
+    docs_results = ROOT / "docs" / "results"
+    docs_results.mkdir(parents=True, exist_ok=True)
+    (docs_results / "results.json").write_text(json.dumps(out, indent=2))
+    print(f"\nWrote {RESULTS / 'results.json'} and {docs_results / 'results.json'}")
     for r in out["results"]:
         if "error" in r:
             print(f"  [{r['sport']}] ERROR: {r['error']}")
