@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLV Backtester — Results</title>
+<style>
+  :root{
+    --ink:#11140f; --paper:#f5f3ea; --card:#fff; --line:#dcd7c7;
+    --muted:#6c6a5d; --green:#1f6b3a; --green-soft:#e4efe7;
+    --red:#9a2f2f; --red-soft:#f4e2e0; --amber:#8a5a12; --amber-soft:#f5ead2;
+    --accent:#c8651f; --blue:#1c4f7c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    background:var(--paper);color:var(--ink);line-height:1.55;padding:30px 18px 80px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto}
+  header{border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h1{font-size:32px;font-weight:600;letter-spacing:-.01em;margin-top:3px}
+  .sub{color:var(--muted);font-size:14.5px;max-width:62ch;margin-top:6px}
+  .gen{font-family:ui-monospace,monospace;font-size:11px;color:var(--muted);margin-top:10px}
+
+  .explainer{background:var(--amber-soft);border:1px solid #e3cf9e;border-radius:10px;padding:15px 18px;margin:22px 0;font-size:14px}
+  .explainer b{font-weight:600}
+
+  .sport{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:22px}
+  .sport h2{font-size:22px;font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:4px;text-transform:capitalize}
+  .matchcount{font-family:ui-monospace,monospace;font-size:12px;color:var(--muted);font-weight:400}
+
+  .verdict{border-radius:9px;padding:14px 16px;margin:16px 0;font-size:15px;font-weight:500;border:1px solid}
+  .verdict.no{background:var(--red-soft);border-color:#e0b3ae;color:#6e2020}
+  .verdict.yes{background:var(--green-soft);border-color:#a9cdb5;color:#13502a}
+  .verdict.marg{background:var(--amber-soft);border-color:#e3cf9e;color:#6e4a10}
+  .verdict.inc{background:#eee;border-color:#ccc;color:#444}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+  @media(max-width:640px){.metrics{grid-template-columns:repeat(2,1fr)}}
+  .metric{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:13px}
+  .metric .label{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .metric .val{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:3px}
+  .metric .val.pos{color:var(--green)} .metric .val.neg{color:var(--red)}
+  .metric .hint{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .section-label{font-family:ui-monospace,monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin:22px 0 10px;font-weight:600}
+
+  .chart{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:16px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .axis{stroke:var(--line);stroke-width:1}
+  .gridline{stroke:var(--line);stroke-width:.5;stroke-dasharray:2 3}
+  .tick{font-family:ui-monospace,monospace;font-size:9px;fill:var(--muted)}
+  .ref-line{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 3}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th{text-align:left;font-family:ui-monospace,monospace;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  td.pos{color:var(--green)} td.neg{color:var(--red)}
+  .err{background:var(--red-soft);border:1px solid #e0b3ae;border-radius:9px;padding:14px;font-size:14px}
+  .disclaimer{font-size:12px;color:var(--muted);margin-top:30px;padding-top:16px;border-top:1px solid var(--line);line-height:1.7}
+  code{font-family:ui-monospace,monospace;font-size:.92em;background:#ece8db;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Closing-line value · the only honest edge test</div>
+    <h1>CLV Backtester</h1>
+    <p class="sub">Does a model beat the closing line? If yes, there may be a real, durable edge. If no, no staking strategy rescues it. This dashboard reads <code>results/results.json</code>, regenerated automatically each week.</p>
+    <div class="gen" id="gen"></div>
+  </header>
+
+  <div class="explainer">
+    <b>How to read this.</b> The headline metric is <b>average CLV</b> — how much better a price your model's bets got versus the eventual closing line. Positive and sustained across many bets is the rare "edge might be real" signal. ROI on the backtest is secondary and noisier. <b>Calibration</b> tells you whether the model's probabilities can be trusted for stake-sizing: when it says 30%, does it happen 30% of the time? If calibration is off, Kelly sizing will lie to you.
+  </div>
+
+  <div id="content"></div>
+
+  <p class="disclaimer">
+    This tool measures whether a predictive edge exists; it does not place bets and makes no guarantees. A positive CLV result is a starting point for further validation across more seasons and leagues — never a green light to bet large. If you ever act on a positive result, size with <b>fractional Kelly</b> (¼ or ½) and hard loss limits, because a backtested edge always looks more certain than it is. Most honest attempts show no edge; that is the expected outcome, and learning it cheaply is the point of this exercise. Gamble only what you can afford to lose.
+  </p>
+</div>
+
+<script>
+const C = document.getElementById('content');
+
+function fmtPct(v){ return (v>0?'+':'') + v + '%'; }
+function vclass(v){ return v>0 ? 'pos' : (v<0 ? 'neg':''); }
+
+function verdictClass(v){
+  if(!v) return 'inc';
+  if(v.startsWith('POSITIVE')) return 'yes';
+  if(v.startsWith('MARGINAL')) return 'marg';
+  if(v.startsWith('NO EDGE')) return 'no';
+  return 'inc';
+}
+
+function equityChart(curve){
+  if(!curve||!curve.length) return '';
+  const W=760,H=200,pad=30;
+  const n=curve.length, min=Math.min(0,...curve), max=Math.max(0,...curve);
+  const range=(max-min)||1;
+  const x=i=>pad+(i/(n-1))*(W-2*pad);
+  const y=v=>H-pad-((v-min)/range)*(H-2*pad);
+  let d='M'+x(0)+','+y(curve[0]);
+  for(let i=1;i<n;i++) d+=' L'+x(i)+','+y(curve[i]);
+  const zeroY=y(0);
+  const last=curve[curve.length-1];
+  const col=last>=0?'var(--green)':'var(--red)';
+  return `<svg viewBox="0 0 ${W} ${H}">
+    <line class="ref-line" x1="${pad}" y1="${zeroY}" x2="${W-pad}" y2="${zeroY}"/>
+    <text class="tick" x="${pad-4}" y="${zeroY+3}" text-anchor="end">0</text>
+    <text class="tick" x="${pad-4}" y="${y(max)+3}" text-anchor="end">${max.toFixed(0)}</text>
+    <text class="tick" x="${pad-4}" y="${y(min)+3}" text-anchor="end">${min.toFixed(0)}</text>
+    <path d="${d}" fill="none" stroke="${col}" stroke-width="1.6"/>
+    <text class="tick" x="${W-pad}" y="${H-6}" text-anchor="end">cumulative P&L (units) over bets placed →</text>
+  </svg>`;
+}
+
+function calibChart(calib){
+  if(!calib||!calib.length) return '';
+  const W=360,H=300,pad=40;
+  const sc=v=>pad+v*(W-2*pad);
+  const scy=v=>H-pad-v*(H-2*pad);
+  let pts='';
+  calib.forEach(c=>{
+    const cx=sc(c.predicted), cy=scy(c.actual);
+    const r=Math.min(9,3+Math.sqrt(c.count));
+    pts+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--blue)" fill-opacity="0.5" stroke="var(--blue)"/>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}">
+    <line class="axis" x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}"/>
+    <line class="axis" x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-pad}"/>
+    <line class="ref-line" x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${pad}"/>
+    <text class="tick" x="${W-pad}" y="${pad-6}" text-anchor="end">perfect calibration</text>
+    <text class="tick" x="${(W)/2}" y="${H-8}" text-anchor="middle">predicted probability →</text>
+    <text class="tick" x="12" y="${H/2}" text-anchor="middle" transform="rotate(-90 12 ${H/2})">actual frequency →</text>
+    ${pts}
+  </svg>`;
+}
+
+function renderSport(r){
+  if(r.error){
+    return `<div class="sport"><h2>${r.sport}</h2>
+      <div class="err"><b>Couldn't run.</b> ${r.error}</div></div>`;
+  }
+  const vc = verdictClass(r.verdict);
+  const clvPos = r.avg_clv_pct > 0;
+  const metrics = `
+    <div class="metrics">
+      <div class="metric"><div class="label">Avg CLV</div>
+        <div class="val ${vclass(r.avg_clv_pct)}">${fmtPct(r.avg_clv_pct)}</div>
+        <div class="hint">vs closing line — the key number</div></div>
+      <div class="metric"><div class="label">Bets placed</div>
+        <div class="val">${r.n_bets}</div>
+        <div class="hint">${r.n_bets<50?'too few to trust':'sample size'}</div></div>
+      <div class="metric"><div class="label">Backtest ROI</div>
+        <div class="val ${vclass(r.roi_pct)}">${fmtPct(r.roi_pct)}</div>
+        <div class="hint">secondary, noisy</div></div>
+      <div class="metric"><div class="label">Beat-close rate</div>
+        <div class="val">${r.clv_positive_rate_pct}%</div>
+        <div class="hint">of bets priced above close</div></div>
+    </div>`;
+
+  let betsTable='';
+  if(r.sample_bets && r.sample_bets.length){
+    betsTable = `<div class="section-label">Sample bets (first 15)</div>
+    <table><tr><th>Date</th><th>Match</th><th>Pick</th><th>Model p</th><th>Took</th><th>Close</th><th>CLV</th><th>Result</th></tr>
+    ${r.sample_bets.map(b=>`<tr>
+      <td>${(b.date||'').slice(0,10)}</td><td>${b.match}</td><td>${b.pick}</td>
+      <td>${(b.model_p*100).toFixed(0)}%</td><td>${b.took_odds.toFixed(2)}</td>
+      <td>${b.close_odds.toFixed(2)}</td>
+      <td class="${vclass(b.clv_pct)}">${fmtPct(b.clv_pct.toFixed(1))}</td>
+      <td class="${b.won?'pos':'neg'}">${b.won?'won':'lost'}</td></tr>`).join('')}
+    </table>`;
+  }
+
+  const calib = r.calibration ? `<div class="section-label">Calibration — can the probabilities be trusted?</div>
+    <div class="chart">${calibChart(r.calibration)}</div>` : '';
+  const equity = r.equity_curve ? `<div class="section-label">Equity curve</div>
+    <div class="chart">${equityChart(r.equity_curve)}</div>` : '';
+
+  return `<div class="sport">
+    <h2>${r.sport} <span class="matchcount">${r.matches_loaded} matches loaded</span></h2>
+    <div class="verdict ${vc}">${r.verdict}</div>
+    ${metrics}
+    ${equity}
+    ${calib}
+    ${betsTable}
+  </div>`;
+}
+
+fetch('results/results.json')
+  .then(r=>r.json())
+  .then(data=>{
+    document.getElementById('gen').textContent =
+      'Last generated: ' + (data.generated_utc||'unknown');
+    C.innerHTML = (data.results||[]).map(renderSport).join('');
+  })
+  .catch(e=>{
+    C.innerHTML = `<div class="err"><b>No results yet.</b> Run <code>python src/run.py</code>
+      to generate <code>results/results.json</code>, then refresh. (If viewing locally,
+      serve the folder with <code>python -m http.server</code> so the browser can read the JSON.)</div>`;
+  });
+</script>
+</body>
+</html>
